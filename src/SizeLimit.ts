@@ -14,7 +14,7 @@ const EmptyResult = {
   size: 0,
   running: 0,
   loading: 0,
-  total: 0
+  total: 0,
 };
 
 class SizeLimit {
@@ -25,7 +25,7 @@ class SizeLimit {
     "Size",
     "Loading time (3g)",
     "Running time (snapdragon)",
-    "Total time"
+    "Total time",
   ];
 
   private formatBytes(size: number): string {
@@ -42,7 +42,11 @@ class SizeLimit {
 
   private formatChange(base: number = 0, current: number = 0): string {
     if (base === 0) {
-      return "+100% 🔺";
+      return "added";
+    }
+
+    if (current === 0) {
+      return "removed";
     }
 
     const value = ((current - base) / base) * 100;
@@ -74,7 +78,7 @@ class SizeLimit {
       this.formatLine(
         this.formatBytes(current.size),
         this.formatChange(base.size, current.size)
-      )
+      ),
     ];
   }
 
@@ -97,7 +101,7 @@ class SizeLimit {
         this.formatTime(current.running),
         this.formatChange(base.running, current.running)
       ),
-      this.formatTime(current.total)
+      this.formatTime(current.total),
     ];
   }
 
@@ -115,7 +119,7 @@ class SizeLimit {
           time = {
             running,
             loading,
-            total: loading + running
+            total: loading + running,
           };
         }
 
@@ -124,19 +128,54 @@ class SizeLimit {
           [result.name]: {
             name: result.name,
             size: +result.size,
-            ...time
-          }
+            ...time,
+          },
         };
       },
       {}
     );
   }
 
+  hasSizeChanges(
+    base: { [name: string]: IResult },
+    current: { [name: string]: IResult },
+    threshold = 0
+  ): boolean {
+    const names = [
+      ...new Set([...(base ? Object.keys(base) : []), ...Object.keys(current)]),
+    ];
+    const isSize = names.some(
+      (name: string) => current[name] && current[name].total === undefined
+    );
+
+    // Always return true if time results are present
+    if (!isSize) {
+      return true;
+    }
+
+    return !!names.find((name: string) => {
+      const baseResult = base?.[name] || EmptyResult;
+      const currentResult = current[name] || EmptyResult;
+
+      if (baseResult.size === 0 && currentResult.size === 0) {
+        return true;
+      }
+
+      return (
+        Math.abs((currentResult.size - baseResult.size) / baseResult.size) *
+          100 >
+        threshold
+      );
+    });
+  }
+
   formatResults(
     base: { [name: string]: IResult },
     current: { [name: string]: IResult }
   ): Array<Array<string>> {
-    const names = [...new Set([...Object.keys(base), ...Object.keys(current)])];
+    const names = [
+      ...new Set([...(base ? Object.keys(base) : []), ...Object.keys(current)]),
+    ];
     const isSize = names.some(
       (name: string) => current[name] && current[name].total === undefined
     );
@@ -144,7 +183,7 @@ class SizeLimit {
       ? SizeLimit.SIZE_RESULTS_HEADER
       : SizeLimit.TIME_RESULTS_HEADER;
     const fields = names.map((name: string) => {
-      const baseResult = base[name] || EmptyResult;
+      const baseResult = base?.[name] || EmptyResult;
       const currentResult = current[name] || EmptyResult;
 
       if (isSize) {
