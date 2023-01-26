@@ -21943,7 +21943,7 @@ function run() {
             const resultsFilePath = path_1.default.resolve(__dirname, RESULTS_FILE);
             if (isMainBranch) {
                 let base;
-                const { output: baseOutput } = yield term.execSizeLimit(null, buildScript, cleanScript, windowsVerbatimArguments, directory);
+                const { output: baseOutput } = yield term.execSizeLimit(skipStep, buildScript, cleanScript, windowsVerbatimArguments, directory);
                 try {
                     base = limit.parseResults(baseOutput);
                 }
@@ -21986,15 +21986,16 @@ function run() {
                 throw error;
             }
             const thresholdNumber = Number(threshold);
+            // @ts-ignore
+            const sizeLimitComment = yield fetchPreviousComment(octokit, repo, pr);
             const shouldComment = isNaN(thresholdNumber) ||
-                limit.hasSizeChanges(base, current, thresholdNumber);
+                limit.hasSizeChanges(base, current, thresholdNumber) ||
+                sizeLimitComment;
             if (shouldComment) {
                 const body = [
                     SIZE_LIMIT_HEADING,
                     (0, markdown_table_1.markdownTable)(limit.formatResults(base, current)),
                 ].join("\r\n");
-                // @ts-ignore
-                const sizeLimitComment = yield fetchPreviousComment(octokit, repo, pr);
                 try {
                     if (!sizeLimitComment) {
                         yield octokit.rest.issues.createComment(Object.assign(Object.assign({}, repo), { 

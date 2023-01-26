@@ -66,7 +66,7 @@ async function run() {
     if (isMainBranch) {
       let base;
       const { output: baseOutput } = await term.execSizeLimit(
-        null,
+        skipStep,
         buildScript,
         cleanScript,
         windowsVerbatimArguments,
@@ -137,18 +137,19 @@ async function run() {
 
     const thresholdNumber = Number(threshold);
 
+    // @ts-ignore
+    const sizeLimitComment = await fetchPreviousComment(octokit, repo, pr);
+
     const shouldComment =
       isNaN(thresholdNumber) ||
-      limit.hasSizeChanges(base, current, thresholdNumber);
+      limit.hasSizeChanges(base, current, thresholdNumber) ||
+      sizeLimitComment;
 
     if (shouldComment) {
       const body = [
         SIZE_LIMIT_HEADING,
         markdownTable(limit.formatResults(base, current)),
       ].join("\r\n");
-
-      // @ts-ignore
-      const sizeLimitComment = await fetchPreviousComment(octokit, repo, pr);
 
       try {
         if (!sizeLimitComment) {
