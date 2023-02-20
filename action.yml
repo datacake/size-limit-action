@@ -28,6 +28,9 @@ inputs:
     required: false
     default: master
     description: "The name of the main/protected branch"
+  run_for_branch:
+    required: false
+    description: "This can be set to override the `main_branch` detection."
   threshold:
     required: false
     default: 0.0125

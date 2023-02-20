@@ -40,9 +40,16 @@ async function run() {
     const { payload, repo } = context;
     const pr = payload.pull_request;
     const mainBranch = getInput("main_branch");
-    const isMainBranch = context.ref.includes(mainBranch);
+    const runForBranchInput = getInput("run_for_branch");
 
-    if (!isMainBranch && !pr) {
+    const runForBranch =
+      runForBranchInput === "true"
+        ? true
+        : runForBranchInput === "false"
+        ? false
+        : context.ref.includes(mainBranch);
+
+    if (!runForBranch && !pr) {
       throw new Error(
         "No PR found. Only pull_request workflows are supported."
       );
@@ -63,7 +70,7 @@ async function run() {
     const artifactClient = artifact.create();
     const resultsFilePath = path.resolve(__dirname, RESULTS_FILE);
 
-    if (isMainBranch) {
+    if (runForBranch) {
       let base;
       const { output: baseOutput } = await term.execSizeLimit(
         skipStep,
@@ -108,7 +115,7 @@ async function run() {
         artifactName: ARTIFACT_NAME,
         branch: mainBranch,
         downloadPath: __dirname,
-        workflowEvent: 'push',
+        workflowEvent: "push",
         workflowName: `${process.env.GITHUB_WORKFLOW || ""}`,
       });
       base = JSON.parse(

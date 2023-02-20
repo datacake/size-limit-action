@@ -21925,8 +21925,13 @@ function run() {
             const { payload, repo } = github_1.context;
             const pr = payload.pull_request;
             const mainBranch = getInput("main_branch");
-            const isMainBranch = github_1.context.ref.includes(mainBranch);
-            if (!isMainBranch && !pr) {
+            const runForBranchInput = getInput("run_for_branch");
+            const runForBranch = runForBranchInput === "true"
+                ? true
+                : runForBranchInput === "false"
+                    ? false
+                    : github_1.context.ref.includes(mainBranch);
+            if (!runForBranch && !pr) {
                 throw new Error("No PR found. Only pull_request workflows are supported.");
             }
             const skipStep = getInput("skip_step");
@@ -21941,7 +21946,7 @@ function run() {
             const limit = new SizeLimit_1.default();
             const artifactClient = artifact.create();
             const resultsFilePath = path_1.default.resolve(__dirname, RESULTS_FILE);
-            if (isMainBranch) {
+            if (runForBranch) {
                 let base;
                 const { output: baseOutput } = yield term.execSizeLimit(skipStep, buildScript, cleanScript, windowsVerbatimArguments, directory);
                 try {
@@ -21969,7 +21974,7 @@ function run() {
             try {
                 // Ignore failures here as it is likely that this only happens when introducing size-limit
                 // and this has not been run on the main branch yet
-                yield (0, github_fetch_workflow_artifact_1.default)(octokit, Object.assign(Object.assign({}, repo), { artifactName: ARTIFACT_NAME, branch: mainBranch, downloadPath: __dirname, workflowEvent: 'push', workflowName: `${process.env.GITHUB_WORKFLOW || ""}` }));
+                yield (0, github_fetch_workflow_artifact_1.default)(octokit, Object.assign(Object.assign({}, repo), { artifactName: ARTIFACT_NAME, branch: mainBranch, downloadPath: __dirname, workflowEvent: "push", workflowName: `${process.env.GITHUB_WORKFLOW || ""}` }));
                 base = JSON.parse(yield fs_1.promises.readFile(resultsFilePath, { encoding: "utf8" }));
             }
             catch (error) {
