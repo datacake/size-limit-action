@@ -40,13 +40,13 @@ class SizeLimit {
     return `${Math.ceil(seconds * 1000)} ms`;
   }
 
-  private formatChange(base: number = 0, current: number = 0): string {
+  private formatChange(base: number = 0, current: number = 0, changeHighlightThreshold = 0): string {
     if (base === 0) {
-      return "added";
+      return "added 🆕";
     }
 
     if (current === 0) {
-      return "removed";
+      return "removed 🚮";
     }
 
     const value = ((current - base) / base) * 100;
@@ -54,14 +54,14 @@ class SizeLimit {
       (Math.sign(value) * Math.ceil(Math.abs(value) * 100)) / 100;
 
     if (value > 0) {
-      return `+${formatted}% 🔺`;
+      return value - changeHighlightThreshold > 0 ? `+${formatted}% 🔺` : `+${formatted}%`;
     }
 
     if (value === 0) {
       return `${formatted}%`;
     }
 
-    return `${formatted}% 🔽`;
+    return value + changeHighlightThreshold < 0 ? `${formatted}% 🔽` : `${formatted}%`;
   }
 
   private formatLine(value: string, change: string) {
@@ -71,13 +71,14 @@ class SizeLimit {
   private formatSizeResult(
     name: string,
     base: IResult,
-    current: IResult
+    current: IResult,
+    changeHighlightThreshold: number,
   ): Array<string> {
     return [
       name,
       this.formatLine(
         this.formatBytes(current.size),
-        this.formatChange(base.size, current.size)
+        this.formatChange(base.size, current.size, changeHighlightThreshold)
       ),
     ];
   }
@@ -85,21 +86,22 @@ class SizeLimit {
   private formatTimeResult(
     name: string,
     base: IResult,
-    current: IResult
+    current: IResult,
+    changeHighlightThreshold: number,
   ): Array<string> {
     return [
       name,
       this.formatLine(
         this.formatBytes(current.size),
-        this.formatChange(base.size, current.size)
+        this.formatChange(base.size, current.size, changeHighlightThreshold)
       ),
       this.formatLine(
         this.formatTime(current.loading),
-        this.formatChange(base.loading, current.loading)
+        this.formatChange(base.loading, current.loading, changeHighlightThreshold)
       ),
       this.formatLine(
         this.formatTime(current.running),
-        this.formatChange(base.running, current.running)
+        this.formatChange(base.running, current.running, changeHighlightThreshold)
       ),
       this.formatTime(current.total),
     ];
@@ -171,7 +173,8 @@ class SizeLimit {
 
   formatResults(
     base: { [name: string]: IResult },
-    current: { [name: string]: IResult }
+    current: { [name: string]: IResult },
+    changeHighlightThreshold: number = 0,
   ): Array<Array<string>> {
     const names = [
       ...new Set([...(base ? Object.keys(base) : []), ...Object.keys(current)]),
@@ -187,9 +190,9 @@ class SizeLimit {
       const currentResult = current[name] || EmptyResult;
 
       if (isSize) {
-        return this.formatSizeResult(name, baseResult, currentResult);
+        return this.formatSizeResult(name, baseResult, currentResult, changeHighlightThreshold);
       }
-      return this.formatTimeResult(name, baseResult, currentResult);
+      return this.formatTimeResult(name, baseResult, currentResult, changeHighlightThreshold);
     });
 
     return [header, ...fields];

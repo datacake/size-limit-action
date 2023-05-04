@@ -63,6 +63,7 @@ async function run() {
       getInput("windows_verbatim_arguments") === "true" ? true : false;
     const githubToken = getInput("github_token");
     const threshold = getInput("threshold");
+    const changeHighlightThreshold = getInput("change_highlight_threshold");
 
     const octokit = getOctokit(githubToken);
     const term = new Term();
@@ -153,9 +154,11 @@ async function run() {
       sizeLimitComment;
 
     if (shouldComment) {
+      const changeHighlightThresholdNumber = Number(changeHighlightThreshold);
+
       const body = [
         SIZE_LIMIT_HEADING,
-        markdownTable(limit.formatResults(base, current)),
+        markdownTable(limit.formatResults(base, current, changeHighlightThresholdNumber)),
       ].join("\r\n");
 
       try {
