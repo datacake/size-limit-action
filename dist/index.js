@@ -21686,38 +21686,38 @@ class SizeLimit {
         }
         return `${Math.ceil(seconds * 1000)} ms`;
     }
-    formatChange(base = 0, current = 0) {
+    formatChange(base = 0, current = 0, changeHighlightThreshold = 0) {
         if (base === 0) {
-            return "added";
+            return "added 🆕";
         }
         if (current === 0) {
-            return "removed";
+            return "removed 🚮";
         }
         const value = ((current - base) / base) * 100;
         const formatted = (Math.sign(value) * Math.ceil(Math.abs(value) * 100)) / 100;
         if (value > 0) {
-            return `+${formatted}% 🔺`;
+            return value - changeHighlightThreshold > 0 ? `+${formatted}% 🔺` : `+${formatted}%`;
         }
         if (value === 0) {
             return `${formatted}%`;
         }
-        return `${formatted}% 🔽`;
+        return value + changeHighlightThreshold < 0 ? `${formatted}% 🔽` : `${formatted}%`;
     }
     formatLine(value, change) {
         return `${value} (${change})`;
     }
-    formatSizeResult(name, base, current) {
+    formatSizeResult(name, base, current, changeHighlightThreshold) {
         return [
             name,
-            this.formatLine(this.formatBytes(current.size), this.formatChange(base.size, current.size)),
+            this.formatLine(this.formatBytes(current.size), this.formatChange(base.size, current.size, changeHighlightThreshold)),
         ];
     }
-    formatTimeResult(name, base, current) {
+    formatTimeResult(name, base, current, changeHighlightThreshold) {
         return [
             name,
-            this.formatLine(this.formatBytes(current.size), this.formatChange(base.size, current.size)),
-            this.formatLine(this.formatTime(current.loading), this.formatChange(base.loading, current.loading)),
-            this.formatLine(this.formatTime(current.running), this.formatChange(base.running, current.running)),
+            this.formatLine(this.formatBytes(current.size), this.formatChange(base.size, current.size, changeHighlightThreshold)),
+            this.formatLine(this.formatTime(current.loading), this.formatChange(base.loading, current.loading, changeHighlightThreshold)),
+            this.formatLine(this.formatTime(current.running), this.formatChange(base.running, current.running, changeHighlightThreshold)),
             this.formatTime(current.total),
         ];
     }
@@ -21757,7 +21757,7 @@ class SizeLimit {
                 threshold);
         });
     }
-    formatResults(base, current) {
+    formatResults(base, current, changeHighlightThreshold = 0) {
         const names = [
             ...new Set([...(base ? Object.keys(base) : []), ...Object.keys(current)]),
         ];
@@ -21769,9 +21769,9 @@ class SizeLimit {
             const baseResult = (base === null || base === void 0 ? void 0 : base[name]) || EmptyResult;
             const currentResult = current[name] || EmptyResult;
             if (isSize) {
-                return this.formatSizeResult(name, baseResult, currentResult);
+                return this.formatSizeResult(name, baseResult, currentResult, changeHighlightThreshold);
             }
-            return this.formatTimeResult(name, baseResult, currentResult);
+            return this.formatTimeResult(name, baseResult, currentResult, changeHighlightThreshold);
         });
         return [header, ...fields];
     }
@@ -21941,6 +21941,7 @@ function run() {
             const windowsVerbatimArguments = getInput("windows_verbatim_arguments") === "true" ? true : false;
             const githubToken = getInput("github_token");
             const threshold = getInput("threshold");
+            const changeHighlightThreshold = getInput("change_highlight_threshold");
             const octokit = (0, github_1.getOctokit)(githubToken);
             const term = new Term_1.default();
             const limit = new SizeLimit_1.default();
@@ -21997,9 +21998,10 @@ function run() {
                 limit.hasSizeChanges(base, current, thresholdNumber) ||
                 sizeLimitComment;
             if (shouldComment) {
+                const changeHighlightThresholdNumber = Number(changeHighlightThreshold);
                 const body = [
                     SIZE_LIMIT_HEADING,
-                    (0, markdown_table_1.markdownTable)(limit.formatResults(base, current)),
+                    (0, markdown_table_1.markdownTable)(limit.formatResults(base, current, changeHighlightThresholdNumber)),
                 ].join("\r\n");
                 try {
                     if (!sizeLimitComment) {

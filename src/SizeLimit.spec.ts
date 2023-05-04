@@ -118,7 +118,7 @@ describe("SizeLimit", () => {
     expect(limit.formatResults(base, current)).toEqual([
       SizeLimit.SIZE_RESULTS_HEADER,
       ["dist/index.js", "98.53 KB (-9.02% 🔽)"],
-      ["dist/new.js", "98.53 KB (added)"],
+      ["dist/new.js", "98.53 KB (added 🆕)"],
     ]);
   });
 
@@ -139,8 +139,56 @@ describe("SizeLimit", () => {
 
     expect(limit.formatResults(base, current)).toEqual([
       SizeLimit.SIZE_RESULTS_HEADER,
-      ["dist/index.js", "0 B (removed)"],
-      ["dist/new.js", "98.53 KB (added)"],
+      ["dist/index.js", "0 B (removed 🚮)"],
+      ["dist/new.js", "98.53 KB (added 🆕)"],
+    ]);
+  });
+
+  test("should format size-limit with change emojis only if change highlight threshold surpassed", () => {
+    const limit = new SizeLimit();
+    const base = {
+      "dist/around-same-size.js": {
+        name: "dist/around-same-size.js",
+        size: 110894,
+      },
+      "dist/much-bigger.js": {
+        name: "dist/much-bigger.js",
+        size: 133742,
+      },
+      "dist/slightly-smaller.js": {
+        name: "dist/slightly-smaller.js",
+        size: 1402,
+      },
+    };
+    const current = {
+      "dist/around-same-size.js": {
+        name: "dist/around-same-size.js",
+        size: 110642,
+      },
+      "dist/much-bigger.js": {
+        name: "dist/much-bigger.js",
+        size: 153293,
+      },
+      "dist/slightly-smaller.js": {
+        name: "dist/slightly-smaller.js",
+        size: 1374,
+      },
+    };
+
+    expect(limit.formatResults(base, current, 2)).toEqual([
+      SizeLimit.SIZE_RESULTS_HEADER,
+      [
+        "dist/around-same-size.js",
+        "108.05 KB (-0.23%)",
+      ],
+      [
+        "dist/much-bigger.js",
+        "149.7 KB (+14.62% 🔺)",
+      ],
+      [
+        "dist/slightly-smaller.js",
+        "1.34 KB (-2%)",
+      ],
     ]);
   });
 

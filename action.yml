@@ -35,6 +35,10 @@ inputs:
     required: false
     default: 0.0125
     description: "The percentage threshold for size changes before posting a comment"
+  change_highlight_threshold:
+    required: false
+    default: 0
+    description: "The percentage threshold for changes to be highlighted with an emoji"
 runs:
   using: "node16"
   main: "dist/index.js"
